@@ -81,11 +81,46 @@ def format_cluster_texts(df):
 clustered_texts = format_cluster_texts(df)
 
 
+from summarizer import llama_summar, summary_openai
 
-####
-from summarizer import process_with_llama
+# summaries = {}
+# for cluster, text in clustered_texts.items():
+#     summary = llama_summar(text)
+#     summaries[cluster] = summary
 
 summaries = {}
 for cluster, text in clustered_texts.items():
-    summary = process_with_llama(text)
+    summary = summary_openai(text)
     summaries[cluster] = summary
+
+
+embedded_summaries = [model_emb_st.encode(summary) for summary in summaries.values()]
+embedded_summaries_np = np.array(embedded_summaries)
+labels, _ = gmm_clustering(embedded_summaries_np, threshold=0.5)
+simple_labels = [label[0] if len(label) > 0 else -1 for label in labels]
+
+
+clustered_summaries = {}
+for i, label in enumerate(simple_labels):
+    if label not in clustered_summaries:
+        clustered_summaries[label] = []
+    clustered_summaries[label].append(list(summaries.values())[i])
+
+
+
+final_summaries = {}
+for cluster, texts in clustered_summaries.items():
+    combined_text = ' '.join(texts)
+    summary = summary_openai(combined_text)
+    final_summaries[cluster] = summary
+
+    
+texts_from_df = df['Text'].tolist()
+texts_from_clustered_texts = list(clustered_texts.values())
+texts_from_final_summaries = list(final_summaries.values())
+
+combined_texts = texts_from_df + texts_from_clustered_texts + texts_from_final_summaries
+
+from helper import save_to_milvus
+
+save_to_milvus(combined_texts)

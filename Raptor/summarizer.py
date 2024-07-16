@@ -3,9 +3,8 @@ This file has diffrent ways to summarize the text
 [open-source , openai api, langchain+openai]
 """
 
-
 # OPENSOURCE/FREE
-from transformers import AutoTokenizer, AutoModelForCausalLM,AutoModelForSeq2SeqLM,BitsAndBytesConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM,AutoModelForSeq2SeqLM
 
 def t5_summary(text):
     tokenizer = AutoTokenizer.from_pretrained("google-t5/t5-base")
@@ -19,8 +18,8 @@ def t5_summary(text):
 # GPU Needed take 22 gb [use kaggle]
 #TODO add quantize modela and tinyops support (https://github.com/Guney-olu/tinyOPS)
 def llama_summary(text):
-    model_id =  "SalmanFaroz/Llama-2-7b-samsum"
-    model = AutoModelForCausalLM.from_pretrained(model_id, quantization_config=bnb_config,device_map="auto")
+    model_id =  "SalmanFaroz/Llama-2-7b-samsum" #special model for summary 
+    model = AutoModelForCausalLM.from_pretrained(model_id,device_map="auto")
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
@@ -43,3 +42,35 @@ def llama_summary(text):
     )
     summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
     return summary
+
+
+# PAID API
+from openai import OpenAI
+
+client = OpenAI(
+  organization='YOUR_ORG_ID',
+  project='$PROJECT_ID',
+)
+
+def summary_openai(
+    text
+):
+    res = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=
+       [
+         {
+          "role": "system",
+          "content": "You are a helpful assistant for text summarization.",
+         },
+         {
+          "role": "user",
+          "content": f"Summarize this {text}",
+         },
+        ],
+    )
+    for chunk in res:
+        if chunk.choices[0].delta.content is not None:
+            res = chunk.choices[0].delta.content
+    return res    
+

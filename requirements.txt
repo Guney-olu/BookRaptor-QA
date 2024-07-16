@@ -12,3 +12,4 @@ nltk
 transformers 
 pymilvus  
 tqdm 
+openai
