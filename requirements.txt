@@ -1,0 +1,14 @@
+# TODO Reduce dependency
+PyMuPDF
+langchain-community
+sentence_transformers
+rank-bm25
+scikit-learn 
+tiktoken 
+torch
+umap-learn  
+unstructured 
+nltk   
+transformers 
+pymilvus  
+tqdm 
