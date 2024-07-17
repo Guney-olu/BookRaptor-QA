@@ -16,14 +16,12 @@ from sentence_transformers import SentenceTransformer
 
 model_emb_st = SentenceTransformer('all-MiniLM-L6-v2')
 
-
-
 # TODO Add more models
 #Using hugging-face [MAX POOLING ->]
 from transformers import AutoTokenizer, AutoModel
 import torch
 import torch.nn.functional as F
-from tqdm import tqdm
+import tqdm
 
 model_name = 'sentence-transformers/all-MiniLM-L6-v2'
 tokenizer_st = AutoTokenizer.from_pretrained(model_name)
@@ -37,7 +35,7 @@ def mean_pooling(model_output, attention_mask):
 # DEDICATED function for raptor (SHAPE IS KNOWN)
 def get_global_embeddings(texts):
     embeddings = []
-    for text in tqdm(texts, desc="Embedding texts"):
+    for text in tqdm.tqdm(texts, desc="Embedding texts"):
         encoded_input = tokenizer_st(text, return_tensors='pt', truncation=True, padding=True)
         with torch.no_grad():
             model_output = model_st(**encoded_input)
@@ -48,7 +46,7 @@ def get_global_embeddings(texts):
 
 def get_summary_embeddings_(summaries):
     embeddings = []
-    for summary in tqdm(summaries.values(), desc="Embedding texts"):
+    for summary in tqdm.tqdm(summaries.values(), desc="Embedding texts"):
         encoded_input = tokenizer_st(summary, return_tensors='pt', truncation=True, padding=True)
         with torch.no_grad():
             model_output = model_st(**encoded_input)

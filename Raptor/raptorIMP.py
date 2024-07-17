@@ -1,6 +1,7 @@
 from typing import Optional
 import numpy as np
 import umap
+import tqdm
 import pandas as pd
 from langchain_community.document_loaders import DirectoryLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -9,11 +10,11 @@ from embeddings import model_emb_st
 from helper import get_token_count
 
 #loading the txt files 
-loader = DirectoryLoader('PATH TO THE DIR', glob="**/*.txt")
+loader = DirectoryLoader('BookRaptor-QA/books', glob="**/*.txt")
 docs = loader.load()
 
 text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=100,
+    chunk_size=400,
     chunk_overlap=20,
     length_function=len,
     is_separator_regex=False,
@@ -30,7 +31,7 @@ concatenated_content = "\n\n\n --- \n\n\n".join(
     [doc.page_content for doc in d_reversed]
 )
 
-global_embeddings = [model_emb_st.encode(txt) for txt in texts]
+global_embeddings = [model_emb_st.encode(txt) for txt in tqdm.tqdm(texts, desc="Generating embeddings")]
 
 def reduce_cluster_embeddings(
     embeddings: np.ndarray,
@@ -70,7 +71,7 @@ df = pd.DataFrame({
     'Embedding': list(global_embeddings_reduced),
     'Cluster': simple_labels
 })
-print(df.head(3))
+
 def format_cluster_texts(df):
     clustered_texts = {}
     for cluster in df['Cluster'].unique():
@@ -81,17 +82,17 @@ def format_cluster_texts(df):
 clustered_texts = format_cluster_texts(df)
 
 
-from summarizer import llama_summar, summary_openai
+from summarizer import llama_summary, summary_openai,t5_summary
+
+summaries = {}
+for cluster, text in tqdm.tqdm(clustered_texts.items(), desc="Generating summaries"):
+    summary = t5_summary(text)
+    summaries[cluster] = summary
 
 # summaries = {}
 # for cluster, text in clustered_texts.items():
-#     summary = llama_summar(text)
+#     summary = summary_openai(text)
 #     summaries[cluster] = summary
-
-summaries = {}
-for cluster, text in clustered_texts.items():
-    summary = summary_openai(text)
-    summaries[cluster] = summary
 
 
 embedded_summaries = [model_emb_st.encode(summary) for summary in summaries.values()]
@@ -108,10 +109,17 @@ for i, label in enumerate(simple_labels):
 
 
 
+# final_summaries = {}
+# for cluster, texts in clustered_summaries.items():
+#     combined_text = ' '.join(texts)
+#     summary = summary_openai(combined_text)
+#     final_summaries[cluster] = summary
+
+print("final summaires")
 final_summaries = {}
 for cluster, texts in clustered_summaries.items():
     combined_text = ' '.join(texts)
-    summary = summary_openai(combined_text)
+    summary = t5_summary(combined_text)
     final_summaries[cluster] = summary
 
     
