@@ -13,3 +13,4 @@ transformers
 pymilvus  
 tqdm 
 openai
+streamlit

@@ -35,7 +35,7 @@ def prepare_data(combined_texts):
 def save_to_milvus(combined_texts):
     test_embedding = model_emb_st.encode("This is a test")
     embedding_dim = len(test_embedding)
-    milvus_client = MilvusClient(uri="/Users/aryanrajpurohit/BookRaptor-QA/Raptor/milvus_chat.db")
+    milvus_client = MilvusClient(uri="/BookRaptor-QA/Raptor/milvus_chat.db")
     collection_name = "rag_collection"
     if milvus_client.has_collection(collection_name):
         milvus_client.drop_collection(collection_name)
