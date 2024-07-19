@@ -54,6 +54,3 @@ def get_summary_embeddings_(summaries):
         sentence_embeddings = F.normalize(sentence_embeddings, p=2, dim=1)  # Normalize embeddings
         embeddings.append(sentence_embeddings.squeeze().tolist())
     return embeddings
-
-
-

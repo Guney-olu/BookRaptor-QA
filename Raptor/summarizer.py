@@ -44,7 +44,9 @@ def llama_summary(text):
     return summary
 
 
-# PAID API
+
+#TODO key as env var for security
+# PAID API - >> Add the keys here ...
 from openai import OpenAI
 
 client = OpenAI(
@@ -73,4 +75,3 @@ def summary_openai(
         if chunk.choices[0].delta.content is not None:
             res = chunk.choices[0].delta.content
     return res    
-

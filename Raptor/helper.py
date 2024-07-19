@@ -12,6 +12,7 @@ def num_tokens_from_string(string: str) -> int:
 def get_token_count(texts):
     return [num_tokens_from_string(t) for t in texts]
 
+
 # Milvus DB data save
 from pymilvus import MilvusClient
 from embeddings import model_emb_st
