@@ -29,7 +29,7 @@ css = '''
 bot_template = '''
 <div class="chat-message bot">
     <div class="avatar">
-        <img src="/Users/aryanrajpurohit/BookRaptor-QA/chat/template/images/robo.jpg" style="max-height: 78px; max-width: 78px; border-radius: 50%; object-fit: cover;">
+        <img src="./BookRaptor-QA/chat/template/images/robo.jpg" style="max-height: 78px; max-width: 78px; border-radius: 50%; object-fit: cover;">
     </div>
     <div class="message">
         <p style="font-size: 20px;">{{MSG}}</p>
@@ -41,7 +41,7 @@ bot_template = '''
 user_template = '''
 <div class="chat-message user">
     <div class="avatar">
-        <img src="BookRaptor-QA/chat/template/images/robo.jpg">
+        <img src="./BookRaptor-QA/chat/template/images/robo.jpg">
     </div>    
     <div class="message">{{MSG}}</div>
 </div>

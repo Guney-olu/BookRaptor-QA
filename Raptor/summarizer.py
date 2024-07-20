@@ -59,10 +59,3 @@ class TextSummarizer:
             model_name="gpt-3.5-turbo-instruct"
         )
         return openai_client
-
-# Example usage:
-# summarizer = TextSummarizer(openai_api_key='your_api_key', openai_org_key='your_org_key')
-# text = "Your text to summarize here"
-# print(summarizer.t5_summary(text))
-# print(summarizer.llama_summary(text))
-# print(summarizer.openai_summarize())

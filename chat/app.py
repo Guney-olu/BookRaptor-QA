@@ -41,7 +41,7 @@ def expand_query(query):
 def process_question(question):
     expanded_query = expand_query(question)
     expanded_query.append(question) 
-    milvus_client = MilvusClient(uri="/Users/aryanrajpurohit/BookRaptor-QA/demo_db/bookfusion.db")
+    milvus_client = MilvusClient(uri="./BookRaptor-QA/demo_db/bookfusion.db")
     collection_name = "BF_collection"
 
     query_res = milvus_client.query(

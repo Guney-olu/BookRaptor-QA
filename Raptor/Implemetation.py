@@ -262,7 +262,7 @@ if __name__ == "__main__":
     
     # saving the data to milvus db check Raptor/helper.py to know more .. 
     from helper import MilvusDataHandler
-    db_path = "/Users/aryanrajpurohit/BookRaptor-QA/demo_db/bookfusion.db"
+    db_path = "./BookRaptor-QA/demo_db/bookfusion.db"
     collection_name = "BF_collection"
     input_file = "/somexyz/working/XYZ.txt" #save as the file saved as checkpoint 
     json_file = "prepared_data.json"
