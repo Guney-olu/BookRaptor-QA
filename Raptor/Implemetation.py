@@ -230,23 +230,35 @@ def get_all_text(all_texts,results):
 
 
 if __name__ == "__main__":
+    
     #Setting up the embedding params
     # check Raptor/embeddings.py to Know More
     from embeddings import hf_embedding_load
     embd = hf_embedding_load()
 
-    # Setting up the model to use 
-    # check Raptor/summarizer.py to Know More
-    
+    """Setting up the model to use 
+    check Raptor/summarizer.py to Know More
     from summarizer import TextSummarizer
     summarizer = TextSummarizer(openai_api_key='your_api_key', openai_org_key='your_org_key')
     model = summarizer.openai_summarize()
-    
+    """
+    #For testing its free
+    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+    from transformers import pipeline
+    from langchain_huggingface import HuggingFacePipeline
+
+    model_id = "google-t5/t5-base"
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    model = AutoModelForSeq2SeqLM.from_pretrained(model_id)
+    pipe = pipeline(
+        "summarization", model=model, tokenizer=tokenizer, max_new_tokens=100,
+    )
+    model = HuggingFacePipeline(pipeline=pipe)
+        
     from extraction import PDFDocumentProcessor
     title = ""
     processor = PDFDocumentProcessor("Path to the file", title=title)
     docs_with_metadata = processor.load_and_split()
-    
     
     leaf_texts = docs_with_metadata.copy()
     results = recursive_embed_cluster_summarize(leaf_texts,title=title, level=1, n_levels=3)
@@ -269,4 +281,5 @@ if __name__ == "__main__":
 
     handler = MilvusDataHandler(db_path, collection_name)
     handler.run(input_file, json_file)
+    
     

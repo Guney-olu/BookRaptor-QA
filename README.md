@@ -14,6 +14,8 @@ pip install -r requirements.txt
 
 ## Basic Usage (Build-in-rag-bot)
 
+About it : Fusion of 3 Scifi Books 
+
 ```bash
 cd chat
 stremlit run app.py
