@@ -18,8 +18,33 @@ pip install -r requirements.txt
 cd chat
 stremlit run app.py
 ```
+## To test Retrieval
+```bash
+python chat/inference.py "Who lives on the mars" "demo_db/bookfusion.db"
+```
+
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="demo.png.png">
-  <img alt=" " src="demo.png.jpg" style="max-width: 60px; height: auto;">
+  <source media="(prefers-color-scheme: dark)" srcset="demo.png">
+  <img alt=" " src="demo.png" style="max-width: 60px; height: auto;">
 </picture>
 
+**Textbooks used for content extraction in folder books**
+
+# Implemtation 
+## Set up basic stuff 
+Pdf Path?
+Which embedding model to use?
+Which model to use to summarize
+Where to save the DB ?
+
+Check the  Raptor/Implemetation.py to set up the stuff then run it 
+
+```bash
+python3 Raptor/Implemetation.py
+```
+
+## TODO
+
+- [ ] **Create a Library** making Implementation.py more easy to use
+- [ ] **Adding more models** trying and adding new models for summarizing
+- [ ] **Improving Retrieval** Modifying the code for better Retrieval from the db
