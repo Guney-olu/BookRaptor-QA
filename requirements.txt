@@ -2,6 +2,7 @@
 PyMuPDF
 langchain-community
 sentence_transformers
+sentencepiece
 rank-bm25
 scikit-learn 
 tiktoken 

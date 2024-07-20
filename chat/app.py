@@ -1,22 +1,31 @@
 """
 Streamlit GUI for chatting 
-TODO Add on spot processing
-"""
+TODO Add on spot processing and langchain for more chat model option
 
+"""
 import streamlit as st
 import nltk
 from nltk.corpus import wordnet
 from sentence_transformers import SentenceTransformer
 from pymilvus import MilvusClient
 from rank_bm25 import BM25Okapi
-import openai
+from openai import OpenAI
 import json
 from template.customtemplate import css, bot_template, user_template
 
-# Ensure required NLTK data is downloaded
-# nltk.download('wordnet')
-# nltk.download('omw-1.4')
+import ssl
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
 
+# Ensure required NLTK data is downloaded
+nltk.download('wordnet')
+nltk.download('omw-1.4')
+
+client = OpenAI(api_key="", organization="")
 
 model_st = SentenceTransformer('all-MiniLM-L6-v2')
 
@@ -32,72 +41,80 @@ def expand_query(query):
 def process_question(question):
     expanded_query = expand_query(question)
     expanded_query.append(question) 
-    milvus_client = MilvusClient(uri="BookRaptor-QA/milvus_demo.db") #default db 
-    collection_name = "my_rag_collection"
+    milvus_client = MilvusClient(uri="/Users/aryanrajpurohit/BookRaptor-QA/demo_db/bookfusion.db")
+    collection_name = "BF_collection"
 
     query_res = milvus_client.query(
         collection_name=collection_name,
-        filter="", 
+        filter="",  
         output_fields=["text"],
-        limit=100
+        limit=10
     )
+
     all_texts = [entity['text'] for entity in query_res]
+
     bm25 = BM25Okapi([text.split() for text in all_texts])
+
     bm25_scores = bm25.get_scores(question.split())
+
     bm25_top_n_indices = bm25.get_top_n(question.split(), all_texts, n=10)
+    
     candidate_embeddings = [model_st.encode(text).tolist() for text in bm25_top_n_indices]
+    
     expanded_query_embeddings = [model_st.encode(term).tolist() for term in expanded_query]
+
+
+    # Hybrid retrieval: re-rank candidates using DPR and Milvus
     search_results = []
     for embedding in expanded_query_embeddings:
         search_res = milvus_client.search(
             collection_name=collection_name,
             data=[embedding],
-            limit=3, 
+            limit=1,  # Return top 3 results
             search_params={"metric_type": "IP", "params": {}}, 
-            output_fields=["text", "title", "page_number"],  
+            output_fields=["text", "title"], 
         )
         search_results.extend(search_res[0])
+
+
     retrieved_lines_with_distances = [
         {
             "text": res["entity"]["text"],
             "title": res["entity"]["title"],
-            "page_number": res["entity"]["page_number"],
             "distance": res["distance"]
         }
         for res in search_results
     ]
-    unique_results = list({(result['text'], result['title'], result['page_number'], result['distance']): result for result in retrieved_lines_with_distances}.values())
+    unique_results = list({(result['text'], result['title'], result['distance']): result for result in retrieved_lines_with_distances}.values())
     sorted_results = sorted(unique_results, key=lambda x: x["distance"], reverse=True)
-    top_results = sorted_results[:3]
+
+    top_results = sorted_results[:2]
 
     return top_results
 
 def query_gpt3(question, context):
     prompt = f"Context: {context}\n\nQuestion: {question}\nAnswer according to the context:"
-    response = openai.Completion.create(
-        engine="text-davinci-003", 
-        prompt=prompt,
-        max_tokens=150
-    )
-    return response.choices[0].text.strip()
+    response = client.chat.completions.create(
+    model="gpt-3.5-turbo",
+    max_tokens=100,
+    messages=[{"role": "user", "content": prompt}])
+    print(response.choices[0].message.content)
+    return response.choices[0].message.content
 
 
 st.set_page_config(page_title="RAG Chat Application",page_icon=":books:")
-st.header("Chat with Mr Potter")
+st.header("Chat with Mr Mars")
 
-question = st.text_input("Enter your question:")
+question = st.text_input("Enter your question!!!")
 
 if st.button("Submit"):
     if question:
         results = process_question(question)
         context = " ".join([result["text"] for result in results])
-        st.write(bot_template.replace(
-                 "{{MSG}}", context), unsafe_allow_html=True)
-        # answer = query_gpt3(question, context)
-        
-        # st.json(results)
-        # st.write("Answer according to the context:")
-        # st.write(answer)
+        title = " & ".join([result["title"] for result in results])  # Combine titles if there are multiple results
+        answer = query_gpt3(question, context)
+        rendered_template = bot_template.replace("{{TITLE}}", title).replace("{{MSG}}", answer)
+        st.write(rendered_template, unsafe_allow_html=True)
+
     else:
-        #st.write("Please enter a question.")
         st.write(user_template.replace("{{MSG}}", question), unsafe_allow_html=True)

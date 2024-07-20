@@ -6,11 +6,23 @@ import pandas as pd
 from langchain_community.document_loaders import DirectoryLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sklearn.mixture import GaussianMixture
-from embeddings import model_emb_st
-from helper import get_token_count
+from sentence_transformers import SentenceTransformer
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
-#loading the txt files 
-loader = DirectoryLoader('BookRaptor-QA/books', glob="**/*.txt")
+# Loading the embedding model and summarizing model
+model_emb_st = SentenceTransformer('all-MiniLM-L6-v2')
+
+def t5_summary(text):
+    tokenizer = AutoTokenizer.from_pretrained("google/t5-v1_1-base")
+    model = AutoModelForSeq2SeqLM.from_pretrained("google/t5-v1_1-base")
+    inputs = tokenizer.encode("summarize: " + text, return_tensors="pt", max_length=512, truncation=True)
+    summary_ids = model.generate(inputs, max_new_tokens=150, min_length=40, length_penalty=2.0, num_beams=4, early_stopping=True)
+    summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+    return summary
+
+
+#loading the txt files from the dir 
+loader = DirectoryLoader('/Users/aryanrajpurohit/BookRaptor-QA/corpus/test', glob="**/*.txt")
 docs = loader.load()
 
 text_splitter = RecursiveCharacterTextSplitter(
@@ -73,18 +85,10 @@ def format_cluster_texts(df):
 
 clustered_texts = format_cluster_texts(df)
 
-
-from summarizer import llama_summary, summary_openai,t5_summary
-
 summaries = {}
 for cluster, text in tqdm.tqdm(clustered_texts.items(), desc="Generating summaries"):
     summary = t5_summary(text)
     summaries[cluster] = summary
-
-# summaries = {}
-# for cluster, text in clustered_texts.items():
-#     summary = summary_openai(text)
-#     summaries[cluster] = summary
 
 
 embedded_summaries = [model_emb_st.encode(summary) for summary in summaries.values()]
@@ -99,12 +103,6 @@ for i, label in enumerate(simple_labels):
         clustered_summaries[label] = []
     clustered_summaries[label].append(list(summaries.values())[i])
 
-# final_summaries = {}
-# for cluster, texts in clustered_summaries.items():
-#     combined_text = ' '.join(texts)
-#     summary = summary_openai(combined_text)
-#     final_summaries[cluster] = summary
-
 final_summaries = {}
 for cluster, texts in clustered_summaries.items():
     combined_text = ' '.join(texts)
@@ -118,6 +116,40 @@ texts_from_final_summaries = list(final_summaries.values())
 
 combined_texts = texts_from_df + texts_from_clustered_texts + texts_from_final_summaries
 
-from helper import save_to_milvus
+# Saving the combined data in Milvus DB
+from pymilvus import MilvusClient
+import tqdm
+
+def prepare_data(combined_texts):
+    data = []
+    for i, text in enumerate(tqdm.tqdm(combined_texts, desc="Preparing data")):
+        embedding = model_emb_st.encode(text).tolist()
+        title = f"Textbook Title {i+1}"
+        page_number = i + 1
+        data.append({
+            "id": i,
+            "vector": embedding,
+            "text": text,
+            "title": title,
+            "page_number": page_number
+        })
+    return data
+
+def save_to_milvus(combined_texts):
+    test_embedding = model_emb_st.encode("This is a test")
+    embedding_dim = len(test_embedding)
+    milvus_client = MilvusClient(uri="/BookRaptor-QA/Raptor/milvus_chat.db")
+    collection_name = "rag_collection"
+    if milvus_client.has_collection(collection_name):
+        milvus_client.drop_collection(collection_name)
+    
+    milvus_client.create_collection(
+    collection_name=collection_name,
+    dimension=embedding_dim,
+    metric_type="IP",  # Inner product distance
+    consistency_level="Strong",  # Strong consistency level
+    )
+    data = prepare_data(combined_texts)
+    milvus_client.insert(collection_name=collection_name, data=data)
 
 save_to_milvus(combined_texts)
