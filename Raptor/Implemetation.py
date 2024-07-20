@@ -227,8 +227,10 @@ if __name__ == "__main__":
 
     # Setting up the model to use 
     # check Raptor/summarizer.py to Know More
-    from summarizer import openai_summarize
-    model = openai_summarize(api_key="XYZ",org_key="ZYZ")
+    
+    from summarizer import TextSummarizer
+    summarizer = TextSummarizer(openai_api_key='your_api_key', openai_org_key='your_org_key')
+    model = summarizer.openai_summarize()
     
     from extraction import PDFDocumentProcessor
     processor = PDFDocumentProcessor("Path to the file", title="book title")
