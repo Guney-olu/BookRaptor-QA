@@ -45,33 +45,40 @@ def llama_summary(text):
 
 
 
-#TODO key as env var for security
-# PAID API - >> Add the keys here ...
-from openai import OpenAI
+#TODO key as env var for security and change this lame method of aaplying api key
+# PAID API - >> Add the keys here ... 
 
-client = OpenAI(
-  organization='YOUR_ORG_ID',
-  project='$PROJECT_ID',
-)
+from langchain_openai import OpenAI
 
-def summary_openai(
-    text
-):
-    res = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=
-       [
-         {
-          "role": "system",
-          "content": "You are a helpful assistant for text summarization.",
-         },
-         {
-          "role": "user",
-          "content": f"Summarize this {text}",
-         },
-        ],
-    )
-    for chunk in res:
-        if chunk.choices[0].delta.content is not None:
-            res = chunk.choices[0].delta.content
-    return res    
+
+def openai_summarize(api_key,org_key):
+
+    return OpenAI(openai_api_key=api_key, openai_organization=org_key,model_name="gpt-3.5-turbo-instruct")
+
+
+# from openai import OpenAI
+# client = OpenAI(
+#   organization='YOUR_ORG_ID',
+#   project='$PROJECT_ID',
+# )
+# def summary_openai(
+#     text
+# ):
+#     res = client.chat.completions.create(
+#         model="gpt-3.5-turbo",
+#         messages=
+#        [
+#          {
+#           "role": "system",
+#           "content": "You are a helpful assistant for text summarization.",
+#          },
+#          {
+#           "role": "user",
+#           "content": f"Summarize this {text}",
+#          },
+#         ],
+#     )
+#     for chunk in res:
+#         if chunk.choices[0].delta.content is not None:
+#             res = chunk.choices[0].delta.content
+#     return res    

@@ -12,14 +12,6 @@ from tqdm import tqdm
 
 RANDOM_SEED=104
 
-#Setting up the embedding params
-# check Raptor/embeddings.py to Know More
-from embeddings import model_emb_st  
-
-# Setting up the model to use 
-# check Raptor/summarizer.py to Know More
-
-
 def reduce_dimensionality_globally(
     embeddings: np.ndarray,
     dim: int,
@@ -52,7 +44,7 @@ def find_optimal_clusters(
     embeddings: np.ndarray, max_clusters: int = 50, random_state: int = RANDOM_SEED
 ) -> int:
     """
-    Determine the optimal number of clusters using the Bayesian Information Criterion (BIC).
+    Determining the optimal number of clusters using the Bayesian Information Criterion (BIC).
     """
     max_clusters = min(max_clusters, len(embeddings))
     n_clusters = np.arange(1, max_clusters)
@@ -66,7 +58,7 @@ def find_optimal_clusters(
 
 def cluster_with_GMM(embeddings: np.ndarray, threshold: float, random_state: int = 0):
     """
-    Cluster embeddings using Gaussian Mixture Models (GMM) and return cluster labels.
+    Clustering embeddings using Gaussian Mixture Models (GMM) and return cluster labels.
     """
     n_clusters = find_optimal_clusters(embeddings)
     gm = GaussianMixture(n_components=n_clusters, random_state=random_state)
@@ -82,9 +74,8 @@ def hierarchical_clustering(
     threshold: float,
 ) -> List[np.ndarray]:
     """
-    Perform hierarchical clustering on embeddings, combining global and local dimensionality reduction and clustering.
+    Performing hierarchical clustering on embeddings, combining global and local dimensionality reduction and clustering.
     """
-    print("hierarchical_clustering")
     if len(embeddings) <= dim + 1:
         # Avoid clustering when there's insufficient data
         return [np.array([0]) for _ in range(len(embeddings))]
@@ -104,19 +95,15 @@ def hierarchical_clustering(
         if len(global_cluster_embeddings_) == 0:
             continue
         if len(global_cluster_embeddings_) <= dim + 1:
-            # Handle small clusters with direct assignment
             local_clusters = [np.array([0]) for _ in global_cluster_embeddings_]
             n_local_clusters = 1
         else:
-            # Local dimensionality reduction and clustering
             reduced_embeddings_local = reduce_dimensionality_locally(
                 global_cluster_embeddings_, dim
             )
             local_clusters, n_local_clusters = cluster_with_GMM(
                 reduced_embeddings_local, threshold
             )
-
-        # Assign local cluster IDs, adjusting for total clusters already processed
         for j in range(n_local_clusters):
             local_cluster_embeddings_ = global_cluster_embeddings_[
                 np.array([j in lc for lc in local_clusters])
@@ -136,7 +123,7 @@ def hierarchical_clustering(
 
 def generate_embeddings(texts):
     """
-    Generate embeddings for a list of texts.
+    Generating embeddings for a list of texts.
     """
     text_embeddings = model_emb_st.embed_documents(tqdm(texts, desc="Generating Embeddings"))
     text_embeddings_np = np.array(text_embeddings)
@@ -145,24 +132,22 @@ def generate_embeddings(texts):
 
 def embed_and_cluster_texts(texts: List[str], titles: List[str]) -> pd.DataFrame:
     """
-    Embed texts, perform hierarchical clustering, and return a DataFrame with texts, embeddings, titles, and cluster labels.
+    Embedding texts, perform hierarchical clustering, and return a DataFrame with texts, embeddings, titles, and cluster labels.
     """
-    text_embeddings_np = generate_embeddings(texts)  # Generate embeddings
+    text_embeddings_np = generate_embeddings(texts)
     cluster_labels = hierarchical_clustering(
         text_embeddings_np, 10, 0.1
-    )  # Perform clustering on the embeddings
-    
-    df = pd.DataFrame()  # Initialize a DataFrame to store the results
-    df["text"] = texts  # Store original texts
-    df["embd"] = list(text_embeddings_np)  # Store embeddings as a list in the DataFrame
-    df["title"] = titles  # Add titles as a column in the DataFrame
-    df["cluster"] = cluster_labels  # Store cluster labels
+    ) 
+    df = pd.DataFrame() 
+    df["text"] = texts 
+    df["embd"] = list(text_embeddings_np)
+    df["cluster"] = cluster_labels 
     return df
 
 
 def format_text_for_summary(df: pd.DataFrame) -> str:
     """
-    Format text from DataFrame for summarization.
+    Formating text from DataFrame for summarization.
     """
     unique_txt = df["text"].tolist()
     return "--- --- \n --- --- ".join(unique_txt)
@@ -174,44 +159,33 @@ def embed_cluster_and_summarize_texts(
     """
     Embed, cluster, and summarize texts, returning DataFrames with clusters and summaries.
     """
-    print("embed_cluster_and_summarize_texts")
-
-    # Embed and cluster the texts, resulting in a DataFrame with 'text', 'embd', and 'cluster' columns
     df_clusters = embed_and_cluster_texts(texts)
-
-    # Prepare to expand the DataFrame for easier manipulation of clusters
     expanded_list = []
 
-    # Expand DataFrame entries to document-cluster pairings for straightforward processing
     for index, row in df_clusters.iterrows():
         for cluster in row["cluster"]:
             expanded_list.append(
                 {"text": row["text"], "embd": row["embd"], "cluster": cluster}
             )
-
-    # Create a new DataFrame from the expanded list
     expanded_df = pd.DataFrame(expanded_list)
 
-    # Retrieve unique cluster identifiers for processing
     all_clusters = expanded_df["cluster"].unique()
 
     print(f"--Generated {len(all_clusters)} clusters--")
 
-    # Summarization
     template = """
+    Summarize the given text below
     {context}
     """
     prompt = ChatPromptTemplate.from_template(template)
     chain = prompt | model | StrOutputParser()
 
-    # Format text within each cluster for summarization
     summaries = []
     for i in tqdm(all_clusters, desc="Generating Summaries"):
         df_cluster = expanded_df[expanded_df["cluster"] == i]
         formatted_txt = format_text_for_summary(df_cluster)
         summaries.append(chain.invoke({"context": formatted_txt}))
 
-    # Create a DataFrame to store summaries with their corresponding cluster and level
     df_summary = pd.DataFrame(
         {
             "summaries": summaries,
@@ -224,72 +198,45 @@ def embed_cluster_and_summarize_texts(
 
 
 def recursive_embed_cluster_summarize(
-    texts: List[str], titles: List[str], level: int = 1, n_levels: int = 3
+    texts: List[str], level: int = 1, n_levels: int = 3
 ) -> Dict[int, Tuple[pd.DataFrame, pd.DataFrame]]:
-    """
-    Recursively embed, cluster, and summarize texts across multiple levels, returning a dictionary of results at each level.
-    """
     print("recursive_embed_cluster_summarize")
 
-    results = {}  # Dictionary to store results at each level
+    results = {} 
 
-    # Perform embedding, clustering, and summarization for the current level
-    df_clusters = embed_and_cluster_texts(texts, titles)
-    df_summary = pd.DataFrame()  # Initialize DataFrame for summaries
+    df_clusters, df_summary = embed_cluster_and_summarize_texts(texts, level)
 
-    # Prepare to expand the DataFrame for easier manipulation of clusters
-    expanded_list = []
-
-    # Expand DataFrame entries to document-cluster pairings for straightforward processing
-    for index, row in df_clusters.iterrows():
-        for cluster in row["cluster"]:
-            expanded_list.append(
-                {"text": row["text"], "embd": row["embd"], "title": row["title"], "cluster": cluster}
-            )
-
-    # Create a new DataFrame from the expanded list
-    expanded_df = pd.DataFrame(expanded_list)
-
-    # Retrieve unique cluster identifiers for processing
-    all_clusters = expanded_df["cluster"].unique()
-
-    print(f"--Generated {len(all_clusters)} clusters--")
-
-    # Summarization
-    template = """
-    {context}
-    """
-    prompt = ChatPromptTemplate.from_template(template)
-    chain = prompt | model | StrOutputParser()
-
-    # Format text within each cluster for summarization
-    summaries = []
-    for i in tqdm(all_clusters, desc="Generating Summaries"):
-        df_cluster = expanded_df[expanded_df["cluster"] == i]
-        formatted_txt = format_text_for_summary(df_cluster)
-        summaries.append(chain.invoke({"context": formatted_txt}))
-
-    # Create a DataFrame to store summaries with their corresponding cluster and level
-    df_summary = pd.DataFrame(
-        {
-            "summaries": summaries,
-            "level": [level] * len(summaries),
-            "cluster": list(all_clusters),
-        }
-    )
-
-    # Prepare titles for the next level
-    if level < n_levels and len(all_clusters) > 1:
-        new_texts = df_summary["summaries"].tolist()
-        new_titles = df_clusters.groupby("cluster")["title"].first().tolist()  # Retrieve titles
-        next_level_results = recursive_embed_cluster_summarize(
-            new_texts, new_titles, level + 1, n_levels
-        )
-
-        # Merge the results from the next level into the current results dictionary
-        results.update(next_level_results)
-
-    # Store the results of the current level
     results[level] = (df_clusters, df_summary)
 
+    unique_clusters = df_summary["cluster"].nunique()
+    if level < n_levels and unique_clusters > 1:
+        new_texts = df_summary["summaries"].tolist()
+        next_level_results = recursive_embed_cluster_summarize(
+            new_texts, level + 1, n_levels
+        )
+
+        results.update(next_level_results)
+
     return results
+
+if __name__ == "__main__":
+    #Setting up the embedding params
+    # check Raptor/embeddings.py to Know More
+    from embeddings import hf_embedding_load
+    model_emb_st = hf_embedding_load()
+
+    # Setting up the model to use 
+    # check Raptor/summarizer.py to Know More
+    from summarizer import openai_summarize
+    model = openai_summarize(api_key="XYZ",org_key="ZYZ")
+    
+    from extraction import PDFDocumentProcessor
+    processor = PDFDocumentProcessor("Path to the file", title="book title")
+    docs_with_metadata = processor.load_and_split()
+    
+    
+    leaf_texts = docs_with_metadata.copy()
+    title= "XYZ"
+    results = recursive_embed_cluster_summarize(leaf_texts,title=title, level=1, n_levels=3)
+    
+

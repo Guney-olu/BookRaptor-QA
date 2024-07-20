@@ -16,6 +16,25 @@ from sentence_transformers import SentenceTransformer
 
 model_emb_st = SentenceTransformer('all-MiniLM-L6-v2')
 
+
+
+## More reliant Method (Very Fast)
+from langchain_community.embeddings import HuggingFaceEmbeddings
+
+def hf_embedding_load():
+    """
+    Loading same model but using hf pineline
+    """
+    EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+    return HuggingFaceEmbeddings(
+        model_name=EMBEDDING_MODEL_NAME,
+        multi_process=True,
+        #model_kwargs={"device": "cuda"},
+        encode_kwargs={"normalize_embeddings": True},  
+        )
+
+
+
 # TODO Add more models
 #Using hugging-face [MAX POOLING ->]
 from transformers import AutoTokenizer, AutoModel
