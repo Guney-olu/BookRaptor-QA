@@ -25,7 +25,7 @@ else:
 nltk.download('wordnet')
 nltk.download('omw-1.4')
 
-client = OpenAI(api_key="", organization="")
+client = OpenAI(api_key="", organization="") # add you keys here or remove and add a .env
 
 model_st = SentenceTransformer('all-MiniLM-L6-v2')
 

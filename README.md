@@ -15,7 +15,7 @@ pip install -r requirements.txt
 ## Basic Usage (Build-in-rag-bot)
 
 About it : Fusion of 3 Scifi Books 
-
+**change the path in line 44 if not found**
 ```bash
 cd chat
 stremlit run app.py
@@ -34,10 +34,10 @@ python chat/inference.py "Who lives on the mars" "demo_db/bookfusion.db"
 
 # Implemtation 
 ## Set up basic stuff 
-Pdf Path?
-Which embedding model to use?
-Which model to use to summarize
-Where to save the DB ?
+*Pdf Path?*
+*Which embedding model to use?*
+*Which model to use to summarize*
+*Where to save the DB ?*
 
 Check the  Raptor/Implemetation.py to set up the stuff then run it 
 
